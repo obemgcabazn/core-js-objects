@@ -366,32 +366,139 @@ function group(array, keySelector, valueSelector) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  createSelector() {
+    return {
+      parts: [],
+      order: ['element', 'id', 'class', 'attr', 'pseudoClass', 'pseudoElement'],
+      usedParts: {},
+
+      addPart(part, value) {
+        if (
+          this.usedParts[part] &&
+          part !== 'class' &&
+          part !== 'attr' &&
+          part !== 'pseudoClass'
+        ) {
+          throw new Error(
+            'Element, id and pseudo-element should not occur more then one time inside the selector'
+          );
+        }
+        if (
+          this.parts.length > 0 &&
+          this.order.indexOf(part) <
+            this.order.indexOf(this.parts[this.parts.length - 1].part)
+        ) {
+          throw new Error(
+            'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+          );
+        }
+        this.parts.push({ part, value });
+        this.usedParts[part] = true;
+      },
+
+      stringify() {
+        return this.parts
+          .map(({ part, value }) => {
+            switch (part) {
+              case 'element':
+                return value;
+              case 'id':
+                return `#${value}`;
+              case 'class':
+                return `.${value}`;
+              case 'attr':
+                return `[${value}]`;
+              case 'pseudoClass':
+                return `:${value}`;
+              case 'pseudoElement':
+                return `::${value}`;
+              default:
+                return '';
+            }
+          })
+          .join('');
+      },
+
+      element(value) {
+        this.addPart('element', value);
+        return this;
+      },
+
+      id(value) {
+        this.addPart('id', value);
+        return this;
+      },
+
+      class(value) {
+        this.addPart('class', value);
+        return this;
+      },
+
+      attr(value) {
+        this.addPart('attr', value);
+        return this;
+      },
+
+      pseudoClass(value) {
+        this.addPart('pseudoClass', value);
+        return this;
+      },
+
+      pseudoElement(value) {
+        this.addPart('pseudoElement', value);
+        return this;
+      },
+    };
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    const selector = this.createSelector();
+    selector.element(value);
+    return selector;
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    const selector = this.createSelector();
+    selector.id(value);
+    return selector;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    const selector = this.createSelector();
+    selector.class(value);
+    return selector;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    const selector = this.createSelector();
+    selector.attr(value);
+    return selector;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    const selector = this.createSelector();
+    selector.pseudoClass(value);
+    return selector;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    const selector = this.createSelector();
+    selector.pseudoElement(value);
+    return selector;
+  },
+
+  combine(selector1, combinator, selector2) {
+    return {
+      selector1,
+      combinator,
+      selector2,
+
+      stringify() {
+        return `${this.selector1.stringify()} ${
+          this.combinator
+        } ${this.selector2.stringify()}`;
+      },
+    };
   },
 };
 
